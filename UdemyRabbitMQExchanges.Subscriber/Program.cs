@@ -16,7 +16,7 @@ factory.Uri = new Uri(rabbitMQUrl);
 
 using var connection = factory.CreateConnection();
 
-var channel = connection.CreateModel();
+var channel = connection.CreateModel(); 
 
 //channel.QueueDeclare("hello-queue", true, false, false);
 
