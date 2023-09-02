@@ -18,18 +18,17 @@ using var connection = factory.CreateConnection();
 
 var channel = connection.CreateModel();
 
-channel.QueueDeclare("hello-queue", true, false, false);
+channel.ExchangeDeclare("header-exchange", type: ExchangeType.Headers, durable: true); //durable:false Uygulama restart atarsa Exchageler silinir
+Dictionary<string,object> headers = new Dictionary<string, object>();
 
-Enumerable.Range(1, 50).ToList().ForEach(x =>
-{
-    string message = $"Message {x}";
+headers.Add("format", "pdf");
+headers.Add("shape", "a4");
 
-    var messageBody = Encoding.UTF8.GetBytes(message);
+var properties = channel.CreateBasicProperties();
+properties.Headers=headers;
 
-    channel.BasicPublish(string.Empty, "hello-queue", null, messageBody);
+Console.WriteLine("Mesaj Gönderilmiştir");
 
-    Console.WriteLine($"Mesaj Gönderilmiştir : {message}");
-
-});
-
+channel.BasicPublish("header-exchange", string.Empty, properties,Encoding.UTF8.GetBytes("Header Mesajım"));
+ 
 Console.ReadLine();

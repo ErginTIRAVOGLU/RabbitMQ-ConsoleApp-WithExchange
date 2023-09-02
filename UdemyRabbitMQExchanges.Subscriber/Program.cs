@@ -18,26 +18,41 @@ using var connection = factory.CreateConnection();
 
 var channel = connection.CreateModel();
 
-channel.QueueDeclare("hello-queue", true, false, false);
+channel.ExchangeDeclare("header-exchange", type: ExchangeType.Headers, durable: true); //durable:false Uygulama restart atarsa Exchageler silinir
 
-//channel.BasicQos(0, 3, false); // Her bir istemci üç üç alır
-//channel.BasicQos(0, 6, false); // Kaç istemci varsa 6'ya böler (3 istemci varsa 2-2-2 şeklinde alır)
 
 channel.BasicQos(0, 1, false); // Her bir istemci bir bir alır
 
 var consumer = new EventingBasicConsumer(channel);
 
-//channel.BasicConsume("hello-queue", true, consumer); // Alınan mesajı otomatik siler
-channel.BasicConsume("hello-queue", false, consumer); // Mesajı RabbitMQ'den silmek için aşağıdaki komuta ihtiyacı var
+
+var queueName = channel.QueueDeclare().QueueName;
+
+Dictionary<string,object> headers=new Dictionary<string, object>();
+
+headers.Add("format", "pdf");
+headers.Add("shape", "a4");
+headers.Add("x-match", "all"); //all yukarıda eklenen parametre adları aynı olmalı
+//headers.Add("x-match", "any"); //any yukarıda eklenen parametre adlarından en az biri aynı olmalı
+
+channel.QueueBind(queueName, "header-exchange",string.Empty,headers);
+
+channel.BasicConsume(queueName, false, consumer);
+
+
+Console.WriteLine("Loglar Dinleniyor...");
 
 consumer.Received += (object? sender, BasicDeliverEventArgs e) =>
 {
     var message = Encoding.UTF8.GetString(e.Body.ToArray());
     Thread.Sleep(1500);
     Console.WriteLine("Gelen Mesaj : " + message);
+
+ 
     channel.BasicAck(e.DeliveryTag, false); // Mesajı siler
 };
 
 
 
 Console.ReadLine();
+
